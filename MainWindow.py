@@ -42,13 +42,13 @@ class MainWindow(QWidget, Ui_mainWindow):
         bus = dbusmanager.get_bus()
         #bus.add_signal_receiver(tray_icon.icon_info.wired_profile_chooser,
         #                        'LaunchChooser', 'org.wicd.daemon')
-        #bus.add_signal_receiver(tray_icon.icon_info.update_tray_icon,
-        #                        'StatusChanged', 'org.wicd.daemon')
-        bus.add_signal_receiver(lambda: self.scanEnded(), 'SendEndScanSignal',
+        bus.add_signal_receiver(self.updateStatus,
+                                'StatusChanged', 'org.wicd.daemon')
+        bus.add_signal_receiver(self.scanEnded, 'SendEndScanSignal',
                                 'org.wicd.daemon.wireless')
-        bus.add_signal_receiver(lambda: self.scanStarted(),
+        bus.add_signal_receiver(self.scanStarted,
                                 'SendStartScanSignal', 'org.wicd.daemon.wireless')
-        bus.add_signal_receiver(lambda: self.handleNoDBus(), #or 
+        bus.add_signal_receiver(self.handleNoDBus,
                                 "DaemonClosing", 'org.wicd.daemon')
         bus.add_signal_receiver(lambda: self.setupDBus(force=False), "DaemonStarting",
                                 "org.wicd.daemon")
@@ -85,8 +85,18 @@ class MainWindow(QWidget, Ui_mainWindow):
         print 'wired list: %s' % str(wiredList)
         print 'wireless list: %s' % str(wirelessList)
 
+        widget = QWidget()
+        hbox = QVBoxLayout()
+        for label in wirelessList:
+            hbox.addWidget(QLabel(label))
+        hbox.addItem(QSpacerItem(1, 1, QSizePolicy.Minimum, QSizePolicy.Maximum))
+        widget.setLayout(hbox)
+        self.scrollArea.setWidget(widget)
+
+
+    @catchdbus
     def getWirelessNetStr(self, network_id):
-        return 'Nothing'
+        return self.wireless.GetWirelessProperty(network_id, 'essid')
 
     @catchdbus
     def updateStatus(self, timerFired = False):
