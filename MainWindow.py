@@ -188,6 +188,7 @@ class MainWindow(QWidget, Ui_mainWindow):
 
     @catchdbus
     def updateStatus(self, state = None, info = None, timerFired = False):
+        print state, info
         if self.DBUS_AVAIL:
             if not state or not info:
                 [state, info] = self.daemon.GetConnectionStatus()
