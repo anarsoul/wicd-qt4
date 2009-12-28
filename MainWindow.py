@@ -140,8 +140,10 @@ class MainWindow(QWidget, Ui_mainWindow):
         hbox3 = QHBoxLayout()
         if is_active:
             connectBut = QPushButton('Disconnect')
+            connectBut.connect(connectBut, SIGNAL('clicked()'), self.disconnect)
         else:
             connectBut = QPushButton('Connect')
+            connectBut.connect(connectBut, SIGNAL('clicked()'), lambda: self.wireless.ConnectWireless(id))
         hbox3.addWidget(connectBut)
         propBut = QPushButton('Properties')
         hbox3.addWidget(propBut)
@@ -203,7 +205,15 @@ class MainWindow(QWidget, Ui_mainWindow):
         if timerFired:
             QTimer.singleShot(1000, lambda: self.updateStatus(True))
 
+
+    @catchdbus
+    def disconnect(self):
+        self.scrollArea.setEnabled(False)
+        self.daemon.Disconnect()
+    
     def setWiredState(self, info):
+        self.scrollArea.setEnabled(True)
+        self.statusLabel.setText('Connected to wired')
         print info
 
     def setWirelessState(self, info):
@@ -214,11 +224,16 @@ class MainWindow(QWidget, Ui_mainWindow):
         connection_speed = info[4]
         self.statusLabel.setText('Connected to %s at %s (IP: %s)' % (network, 
             self.daemon.FormatSignalForPrinting(strength), wirelessIP))
+        self.scrollArea.setEnabled(True)
 
     def setConnectingState(self, info):
+        self.scrollArea.setEnabled(False)
+        self.statusLabel.setText('Connecting...')
         print info
 
     def setNotConnectedState(self, info):
+        self.scrollArea.setEnabled(True)
+        self.statusLabel.setText('Not connected')
         print info
 
     def setupDBus(self, force=True):
