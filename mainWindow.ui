@@ -63,6 +63,13 @@
       </layout>
      </item>
      <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Choose from the networks below:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QScrollArea" name="scrollArea">
        <property name="widgetResizable">
         <bool>true</bool>
@@ -73,7 +80,7 @@
           <x>0</x>
           <y>0</y>
           <width>527</width>
-          <height>227</height>
+          <height>209</height>
          </rect>
         </property>
        </widget>

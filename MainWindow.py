@@ -89,7 +89,7 @@ class MainWindow(QWidget, Ui_mainWindow):
         hbox = QVBoxLayout()
         for label in wirelessList:
             hbox.addWidget(QLabel(label))
-        hbox.addItem(QSpacerItem(1, 1, QSizePolicy.Minimum, QSizePolicy.Maximum))
+        hbox.addItem(QSpacerItem(1, 1, QSizePolicy.Minimum, QSizePolicy.Expanding))
         widget.setLayout(hbox)
         self.scrollArea.setWidget(widget)
 
@@ -99,9 +99,10 @@ class MainWindow(QWidget, Ui_mainWindow):
         return self.wireless.GetWirelessProperty(network_id, 'essid')
 
     @catchdbus
-    def updateStatus(self, timerFired = False):
+    def updateStatus(self, state = None, info = None, timerFired = False):
         if self.DBUS_AVAIL:
-            [state, info] = self.daemon.GetConnectionStatus()
+            if not state or not info:
+                [state, info] = self.daemon.GetConnectionStatus()
             if state == misc.WIRED:
                 self.setWiredState(info)
             elif state == misc.WIRELESS:
@@ -122,7 +123,7 @@ class MainWindow(QWidget, Ui_mainWindow):
         strength = info[2]
         cur_net_id = info[3]
         connection_speed = info[4]
-        self.statusLabel.setText('Connected to %s (Level: %s, IP: %s)' % (network, 
+        self.statusLabel.setText('Connected to %s at %s (IP: %s)' % (network, 
             self.daemon.FormatSignalForPrinting(strength), wirelessIP))
 
     def setConnectingState(self, info):
