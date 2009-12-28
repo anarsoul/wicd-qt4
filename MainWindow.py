@@ -92,6 +92,7 @@ class MainWindow(QWidget, Ui_mainWindow):
             line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
             vbox.addWidget(line)
         vbox.addItem(QSpacerItem(1, 1, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        vbox.setSpacing(0)
         widget.setLayout(vbox)
         self.scrollArea.setWidget(widget)
 
@@ -108,8 +109,12 @@ class MainWindow(QWidget, Ui_mainWindow):
         hbox = QHBoxLayout()
         hbox.addWidget(self.getSignalImage(self.getWirelessSignal(id)))
 
+        # right part of wireless network
+        widgetRightPart = QWidget()
+        vbox = QVBoxLayout()
+
         # hbox with wireless network properties
-        widget_netprops = QWidget()
+        widgetNetProps = QWidget()
         hbox2 = QHBoxLayout()
         hbox2.addWidget(QLabel('<b>' + self.getWirelessNetStr(id) + '</b>'))
         hbox2.addWidget(QLabel(self.daemon.FormatSignalForPrinting(str(self.getWirelessSignal(id)))))
@@ -119,8 +124,26 @@ class MainWindow(QWidget, Ui_mainWindow):
             hbox2.addWidget(QLabel('Unsecured'))
         hbox2.addWidget(QLabel('Channel ' + str(self.wireless.GetWirelessProperty(id, 'channel'))))
         hbox2.setSpacing(10)
-        widget_netprops.setLayout(hbox2)
-        hbox.addWidget(widget_netprops)
+        widgetNetProps.setLayout(hbox2)
+        vbox.addWidget(widgetNetProps)
+
+        # autoconnect check box
+        checkBox = QCheckBox('Automatically connect to this network')
+        vbox.addWidget(checkBox)
+        
+        # hbox with buttons
+        widgetButtons = QWidget()
+        hbox3 = QHBoxLayout()
+        connectBut = QPushButton('Connect')
+        hbox3.addWidget(connectBut)
+        propBut = QPushButton('Properties')
+        hbox3.addWidget(propBut)
+        widgetButtons.setLayout(hbox3)
+        vbox.addWidget(widgetButtons)
+
+        vbox.setSpacing(0)
+        widgetRightPart.setLayout(vbox)
+        hbox.addWidget(widgetRightPart)
         hbox.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum))
         widget.setLayout(hbox)
         return widget
