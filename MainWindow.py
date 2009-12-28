@@ -11,6 +11,7 @@ from dbus import DBusException
 # Wicd
 from wicd import dbusmanager
 from wicd import misc
+from wicd import wpath
 
 def catchdbus(func):
     def wrapper(*args, **kwargs):
@@ -79,20 +80,75 @@ class MainWindow(QWidget, Ui_mainWindow):
     @catchdbus
     def updateNetworkList(self):
         wiredList = self.wired.GetWiredProfileList()
-        wirelessList = []
-        for network_id in range(0, self.wireless.GetNumberOfNetworks()):
-            wirelessList.append(self.getWirelessNetStr(network_id))
         print 'wired list: %s' % str(wiredList)
-        print 'wireless list: %s' % str(wirelessList)
 
         widget = QWidget()
-        hbox = QVBoxLayout()
-        for label in wirelessList:
-            hbox.addWidget(QLabel(label))
-        hbox.addItem(QSpacerItem(1, 1, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        widget.setLayout(hbox)
+        vbox = QVBoxLayout()
+        for network_id in range(0, self.wireless.GetNumberOfNetworks()):
+            vbox.addWidget(self.getWirelessNetWidget(network_id))
+            line = QFrame()
+            line.setFrameShape(QFrame.HLine)
+            line.setFrameShadow(QFrame.Sunken)
+            line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+            vbox.addWidget(line)
+        vbox.addItem(QSpacerItem(1, 1, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        widget.setLayout(vbox)
         self.scrollArea.setWidget(widget)
 
+    @catchdbus
+    def getWirelessSignal(self, id):
+        if self.daemon.GetSignalDisplayType() == 1:
+            return self.wireless.GetWirelessProperty(id, 'strength')
+        else:
+            return self.wireless.GetWirelessProperty(id, 'quality')
+
+    def getWirelessNetWidget(self, id):
+        # outer widget
+        widget = QWidget()
+        hbox = QHBoxLayout()
+        hbox.addWidget(self.getSignalImage(self.getWirelessSignal(id)))
+
+        # hbox with wireless network properties
+        widget_netprops = QWidget()
+        hbox2 = QHBoxLayout()
+        hbox2.addWidget(QLabel('<b>' + self.getWirelessNetStr(id) + '</b>'))
+        hbox2.addWidget(QLabel(self.daemon.FormatSignalForPrinting(str(self.getWirelessSignal(id)))))
+        if self.wireless.GetWirelessProperty(id, 'encryption'):
+            hbox2.addWidget(QLabel(self.wireless.GetWirelessProperty(id, 'encryption_method')))
+        else:
+            hbox2.addWidget(QLabel('Unsecured'))
+        hbox2.addWidget(QLabel('Channel ' + str(self.wireless.GetWirelessProperty(id, 'channel'))))
+        hbox2.setSpacing(10)
+        widget_netprops.setLayout(hbox2)
+        hbox.addWidget(widget_netprops)
+        hbox.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        widget.setLayout(hbox)
+        return widget
+
+    @catchdbus
+    def getSignalImage(self, level):
+        if self.daemon.GetWPADriver() == 'ralink legacy' or \
+           self.daemon.GetSignalDisplayType() == 1:
+            if level >= -60:
+                signal_img = 'signal-100.png'
+            elif level >= -70:
+                signal_img = 'signal-75.png'
+            elif level >= -80:
+                signal_img = 'signal-50.png'
+            else:
+                signal_img = 'signal-25.png'
+        else:
+            if level > 75:
+                signal_img = 'signal-100.png'
+            elif level > 50:
+                signal_img = 'signal-75.png'
+            elif level > 25:
+                signal_img = 'signal-50.png'
+            else:
+                signal_img = 'signal-25.png'
+        label = QLabel()
+        label.setPixmap(QPixmap(wpath.images + signal_img))
+        return label
 
     @catchdbus
     def getWirelessNetStr(self, network_id):
