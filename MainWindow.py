@@ -37,6 +37,7 @@ class MainWindow(QWidget, Ui_mainWindow):
         self.scanning = False
         self.refreshBut.connect(self.refreshBut, SIGNAL('clicked()'), self.scanClicked)
 
+        self.curState = None
         self.daemon = self.wireless = self.wired = None
         self.setupDBus()
 
@@ -85,7 +86,8 @@ class MainWindow(QWidget, Ui_mainWindow):
         widget = QWidget()
         vbox = QVBoxLayout()
         for network_id in range(0, self.wireless.GetNumberOfNetworks()):
-            vbox.addWidget(self.getWirelessNetWidget(network_id))
+            is_active = self.wireless.GetCurrentNetworkID(self.wireless.GetIwconfig()) == network_id
+            vbox.addWidget(self.getWirelessNetWidget(network_id, is_active))
             line = QFrame()
             line.setFrameShape(QFrame.HLine)
             line.setFrameShadow(QFrame.Sunken)
@@ -103,7 +105,7 @@ class MainWindow(QWidget, Ui_mainWindow):
         else:
             return self.wireless.GetWirelessProperty(id, 'quality')
 
-    def getWirelessNetWidget(self, id):
+    def getWirelessNetWidget(self, id, is_active):
         # outer widget
         widget = QWidget()
         hbox = QHBoxLayout()
@@ -129,12 +131,17 @@ class MainWindow(QWidget, Ui_mainWindow):
 
         # autoconnect check box
         checkBox = QCheckBox('Automatically connect to this network')
+        if self.wireless.GetWirelessProperty(id, 'automatic'):
+            checkBox.setChecked(True)
         vbox.addWidget(checkBox)
         
         # hbox with buttons
         widgetButtons = QWidget()
         hbox3 = QHBoxLayout()
-        connectBut = QPushButton('Connect')
+        if is_active:
+            connectBut = QPushButton('Disconnect')
+        else:
+            connectBut = QPushButton('Connect')
         hbox3.addWidget(connectBut)
         propBut = QPushButton('Properties')
         hbox3.addWidget(propBut)
@@ -190,6 +197,9 @@ class MainWindow(QWidget, Ui_mainWindow):
                 self.setConnectingState(info)
             else:
                 self.setNotConnectedState(info)
+        if self.curState != state:
+            self.updateNetworkList()
+            self.curState = state
         if timerFired:
             QTimer.singleShot(1000, lambda: self.updateStatus(True))
 
@@ -239,4 +249,3 @@ class MainWindow(QWidget, Ui_mainWindow):
         self.DBUS_AVAIL = False
         #gui.handle_no_dbus(from_tray=True)
         print "Wicd daemon is shutting down!"
-
