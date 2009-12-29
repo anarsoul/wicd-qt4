@@ -15,6 +15,12 @@ from wicd import misc
 from wicd import wpath
 from wicd.translations import language
 
+def qstr(arg):
+    return QString.fromLocal8Bit(arg)
+
+def qlanguage(arg):
+    return qstr(language[arg])
+
 def catchdbus(func):
     def wrapper(*args, **kwargs):
         try:
@@ -67,7 +73,7 @@ class MainWindow(QWidget, Ui_mainWindow):
         self.wireless.Scan(False)
 
     def scanStarted(self):
-        label = QLabel('Scanning...')
+        label = QLabel(qlanguage('scanning_stand_by'))
         label.setAlignment(Qt.AlignCenter)
         label.setEnabled(False)
         self.scrollArea.setWidget(label)
@@ -87,23 +93,33 @@ class MainWindow(QWidget, Ui_mainWindow):
 
     @catchdbus
     def updateNetworkList(self):
+        # Add wired list
         wiredList = self.wired.GetWiredProfileList()
-        print 'wired list: %s' % str(wiredList)
 
-        widget = QWidget()
-        vbox = QVBoxLayout()
-        for network_id in range(0, self.wireless.GetNumberOfNetworks()):
-            is_active = self.wireless.GetCurrentNetworkID(self.wireless.GetIwconfig()) == network_id
-            vbox.addWidget(self.getWirelessNetWidget(network_id, is_active))
-            line = QFrame()
-            line.setFrameShape(QFrame.HLine)
-            line.setFrameShadow(QFrame.Sunken)
-            line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-            vbox.addWidget(line)
-        vbox.addItem(QSpacerItem(1, 1, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        vbox.setSpacing(0)
-        widget.setLayout(vbox)
-        self.scrollArea.setWidget(widget)
+        # Add wireless list
+        numberOfNetworks = self.wireless.GetNumberOfNetworks()
+        if numberOfNetworks > 0:
+            widget = QWidget()
+            vbox = QVBoxLayout()
+            for network_id in range(0, numberOfNetworks):
+                is_active = self.wireless.GetCurrentNetworkID(self.wireless.GetIwconfig()) == network_id
+                vbox.addWidget(self.getWirelessNetWidget(network_id, is_active))
+                line = QFrame()
+                line.setFrameShape(QFrame.HLine)
+                line.setFrameShadow(QFrame.Sunken)
+                line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+                vbox.addWidget(line)
+            vbox.addItem(QSpacerItem(1, 1, QSizePolicy.Minimum, QSizePolicy.Expanding))
+            vbox.setSpacing(0)
+            widget.setLayout(vbox)
+            self.scrollArea.setWidget(widget)
+        else:
+            label = QLabel(qlanguage('no_wireless_networks_found'))
+            label.setAlignment(Qt.AlignCenter)
+            label.setEnabled(False)
+            self.scrollArea.setWidget(label)
+            label.show()
+
 
     @catchdbus
     def getWirelessSignal(self, id):
@@ -246,10 +262,10 @@ class MainWindow(QWidget, Ui_mainWindow):
             self.scrollArea.setEnabled(False)
             if self.wired.CheckIfWiredConnecting():
                 self.statusLabel.setText(language['wired_network'] + ': ' +
-                    QString.fromLocal8Bit(language[str(self.wired.CheckWiredConnectingMessage())]))
+                    qlanguage(str(self.wired.CheckWiredConnectingMessage())))
             elif self.wireless.CheckIfWirelessConnecting():
                 self.statusLabel.setText(self.wireless.GetCurrentNetwork(self.wireless.GetIwconfig()) + ': ' +
-                    QString.fromLocal8Bit(language[str(self.wireless.CheckWirelessConnectingMessage())]))
+                    qlanguage(str(self.wireless.CheckWirelessConnectingMessage())))
 
             QTimer.singleShot(500, self.setConnectingState)
 
