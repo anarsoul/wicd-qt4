@@ -2,7 +2,6 @@
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-#import atexit
 import sys
 
 # Import ui parts
@@ -17,14 +16,6 @@ misc.RenameProcess("wicd-client-qt4")
 if __name__ == '__main__':
     wpath.chdir(__file__)
     
-#def on_exit():
-#    print 'on_exit'
-#    if DBUS_AVAIL:
-#        try:
-#            daemon.SetGUIOpen(False)
-#        except DBusException:
-#            pass
-
 def main(argv):
     app = QApplication(sys.argv)
 

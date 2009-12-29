@@ -48,6 +48,13 @@ class MainWindow(QWidget, Ui_mainWindow):
         self.cancelBut.setVisible(False)
         self.cancelBut.connect(self.cancelBut, SIGNAL('clicked()'), self.cancelClicked)
         self.refreshBut.connect(self.refreshBut, SIGNAL('clicked()'), self.scanClicked)
+        self.aboutBut.connect(self.aboutBut, SIGNAL('clicked()'), self.aboutClicked)
+        self.disconnectAllBut.connect(self.disconnectAllBut, SIGNAL('clicked()'), self.cancelClicked)
+        self.preferencesBut.connect(self.preferencesBut, SIGNAL('clicked()'), self.notImplemented)
+        self.quitBut.connect(self.quitBut, SIGNAL('clicked()'), lambda: QApplication.instance().quit())
+        self.networkBut.connect(self.networkBut, SIGNAL('clicked()'), self.notImplemented)
+
+        QApplication.instance().connect(QApplication.instance(), SIGNAL('aboutToQuit()'), self.onExit)
 
         self.curState = None
         self.daemon = self.wireless = self.wired = None
@@ -69,6 +76,12 @@ class MainWindow(QWidget, Ui_mainWindow):
         self.updateStatus()
         QTimer.singleShot(1000, lambda: self.updateStatus(True))
 
+    def notImplemented(self):
+        QMessageBox.information(self, 'Not Implemented!', 'Sorry, but this functions is not implemented yet!')
+
+    def aboutClicked(self):
+        QMessageBox.information(self, 'About', 'wicd-qt4 development version')
+
     def scanClicked(self):
         self.wireless.Scan(False)
 
@@ -84,12 +97,18 @@ class MainWindow(QWidget, Ui_mainWindow):
         self.updateNetworkList()
         self.updateStatus()
 
+    def onExit(self):
+        if self.DBUS_AVAIL:
+            try:
+                self.daemon.SetGUIOpen(False)
+            except DBusException:
+                pass
+
     @catchdbus
     def cancelClicked(self):
-        if self.connecting:
-            self.cancelBut.setEnabled(False)
-            self.daemon.CancelConnect()
-            self.daemon.SetForcedDisconnect(True)
+        self.cancelBut.setEnabled(False)
+        self.daemon.CancelConnect()
+        self.daemon.SetForcedDisconnect(True)
 
     @catchdbus
     def updateNetworkList(self):
@@ -211,7 +230,6 @@ class MainWindow(QWidget, Ui_mainWindow):
 
     @catchdbus
     def updateStatus(self, state = None, info = None, timerFired = False):
-        print state, info
         self.connecting = False
         self.cancelBut.setVisible(False)
         self.connectProgress.setVisible(False)
