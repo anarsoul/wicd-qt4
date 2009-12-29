@@ -175,6 +175,7 @@ class MainWindow(QWidget, Ui_mainWindow):
         checkBox = QCheckBox('Automatically connect to this network')
         if self.wireless.GetWirelessProperty(id, 'automatic'):
             checkBox.setChecked(True)
+        checkBox.connect(checkBox, SIGNAL('stateChanged(int)'), lambda(state): self.updateAutoconnect(id, state == Qt.Checked))
         vbox.addWidget(checkBox)
         
         # hbox with buttons
@@ -198,6 +199,11 @@ class MainWindow(QWidget, Ui_mainWindow):
         hbox.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum))
         widget.setLayout(hbox)
         return widget
+
+    @catchdbus
+    def updateAutoconnect(self, id, auto):
+        self.wireless.SetWirelessProperty(id, 'automatic', auto)
+        self.wireless.SaveWirelessNetworkProperty(id, 'automatic')
 
     @catchdbus
     def getSignalImage(self, level):
