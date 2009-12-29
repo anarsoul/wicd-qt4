@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -* coding: utf-8 -*-
 
 # GUI
 from PyQt4.QtCore import *
@@ -12,6 +13,7 @@ from dbus import DBusException
 from wicd import dbusmanager
 from wicd import misc
 from wicd import wpath
+from wicd.translations import language
 
 def catchdbus(func):
     def wrapper(*args, **kwargs):
@@ -35,6 +37,10 @@ class MainWindow(QWidget, Ui_mainWindow):
         super(MainWindow, self).__init__(parent)
         self.setupUi(self)
         self.scanning = False
+        self.connecting = False
+        self.connectProgress.setVisible(False)
+        self.cancelBut.setVisible(False)
+        self.cancelBut.connect(self.cancelBut, SIGNAL('clicked()'), self.cancelClicked)
         self.refreshBut.connect(self.refreshBut, SIGNAL('clicked()'), self.scanClicked)
 
         self.curState = None
@@ -69,14 +75,15 @@ class MainWindow(QWidget, Ui_mainWindow):
         pass
     
     def scanEnded(self):
-        label = QLabel('Done!')
-        label.setAlignment(Qt.AlignCenter)
-        label.setEnabled(False)
-        self.scrollArea.setWidget(label)
-        label.show()
-
         self.updateNetworkList()
         self.updateStatus()
+
+    @catchdbus
+    def cancelClicked(self):
+        if self.connecting:
+            self.cancelBut.setEnabled(False)
+            self.daemon.CancelConnect()
+            self.daemon.SetForcedDisconnect(True)
 
     @catchdbus
     def updateNetworkList(self):
@@ -189,6 +196,9 @@ class MainWindow(QWidget, Ui_mainWindow):
     @catchdbus
     def updateStatus(self, state = None, info = None, timerFired = False):
         print state, info
+        self.connecting = False
+        self.cancelBut.setVisible(False)
+        self.connectProgress.setVisible(False)
         if self.DBUS_AVAIL:
             if not state or not info:
                 [state, info] = self.daemon.GetConnectionStatus()
@@ -197,7 +207,11 @@ class MainWindow(QWidget, Ui_mainWindow):
             elif state == misc.WIRELESS:
                 self.setWirelessState(info)
             elif state == misc.CONNECTING:
-                self.setConnectingState(info)
+                self.cancelBut.setVisible(True)
+                self.cancelBut.setEnabled(True)
+                self.connectProgress.setVisible(True)
+                self.connecting = True
+                self.setConnectingState()
             else:
                 self.setNotConnectedState(info)
         if self.curState != state:
@@ -227,10 +241,17 @@ class MainWindow(QWidget, Ui_mainWindow):
             self.daemon.FormatSignalForPrinting(strength), wirelessIP))
         self.scrollArea.setEnabled(True)
 
-    def setConnectingState(self, info):
-        self.scrollArea.setEnabled(False)
-        self.statusLabel.setText('Connecting...')
-        print info
+    def setConnectingState(self):
+        if self.connecting:
+            self.scrollArea.setEnabled(False)
+            if self.wired.CheckIfWiredConnecting():
+                self.statusLabel.setText(language['wired_network'] + ': ' +
+                    QString.fromLocal8Bit(language[str(self.wired.CheckWiredConnectingMessage())]))
+            elif self.wireless.CheckIfWirelessConnecting():
+                self.statusLabel.setText(self.wireless.GetCurrentNetwork(self.wireless.GetIwconfig()) + ': ' +
+                    QString.fromLocal8Bit(language[str(self.wireless.CheckWirelessConnectingMessage())]))
+
+            QTimer.singleShot(500, self.setConnectingState)
 
     def setNotConnectedState(self, info):
         self.scrollArea.setEnabled(True)
