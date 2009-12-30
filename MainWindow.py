@@ -5,6 +5,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from ui_mainWindow import Ui_mainWindow
+from NetworkProps import NetworkProps
 
 # DBus
 from dbus import DBusException
@@ -189,6 +190,7 @@ class MainWindow(QWidget, Ui_mainWindow):
             connectBut.connect(connectBut, SIGNAL('clicked()'), lambda: self.wireless.ConnectWireless(id))
         hbox3.addWidget(connectBut)
         propBut = QPushButton('Properties')
+        propBut.connect(propBut, SIGNAL('clicked()'), lambda: self.openWirelessProps(id))
         hbox3.addWidget(propBut)
         widgetButtons.setLayout(hbox3)
         vbox.addWidget(widgetButtons)
@@ -199,6 +201,10 @@ class MainWindow(QWidget, Ui_mainWindow):
         hbox.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum))
         widget.setLayout(hbox)
         return widget
+
+    def openWirelessProps(self, id):
+        dialog = NetworkProps(self)
+        dialog.exec_()     
 
     @catchdbus
     def updateAutoconnect(self, id, auto):
