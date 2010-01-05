@@ -204,7 +204,47 @@ class MainWindow(QWidget, Ui_mainWindow):
 
     def openWirelessProps(self, id):
         dialog = NetworkProps(self)
+        self.setPropsValues(dialog, lambda(prop): self.getWirelessProp(id, prop))
         dialog.exec_()     
+
+    def setPropsValues(self, dialog, getProp):
+        formatEntry = lambda(prop): misc.noneToBlankString(getProp(prop))
+        dialog.ipEdit.setText(formatEntry('ip'))
+        dialog.netmaskEdit.setText(formatEntry('netmask'))
+        dialog.gatewayEdit.setText(formatEntry('gateway'))
+        dialog.dns1Edit.setText(formatEntry('dns1'))
+        dialog.dns2Edit.setText(formatEntry('dns2'))
+        dialog.dns3Edit.setText(formatEntry('dns3'))
+        dialog.dnsDomainEdit.setText(formatEntry('dns_domain'))
+        dialog.searchDomainEdit.setText(formatEntry('search_domain'))
+        dialog.useGlobalDNS.setChecked(bool(getProp('use_global_dns')))
+
+        dhcpname = getProp('dhcphostname')
+        if dhcpname is None:
+            dhcpname = os.uname()[1]
+
+        dialog.dhcpHostnameEdit.setText(qstr(dhcpname))
+        self.updateCheckboxes(dialog, getProp)
+
+    def updateCheckboxes(self, dialog, getProp):
+        stringToNone = misc.stringToNone
+        if stringToNone(dialog.ipEdit.text()):
+            dialog.useStaticIP.setChecked(True)
+            dialog.useStaticDNS.setEnabled(True)
+        else:
+            dialog.useStaticIP.setChecked(False)
+            dialog.useStaticDNS.setEnabled(False)
+
+        if stringToNone(dialog.dns1Edit.text()) or dialog.useGlobalDNS.isChecked():
+            dialog.useStaticDNS.setChecked(True)
+        else:
+            dialog.useStaticDNS.setChecked(False)
+        dialog.updateCheckboxes()
+
+
+    @catchdbus
+    def getWirelessProp(self, id, prop):
+        return self.wireless.GetWirelessProperty(id, prop)
 
     @catchdbus
     def updateAutoconnect(self, id, auto):

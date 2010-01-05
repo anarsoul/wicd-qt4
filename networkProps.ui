@@ -260,7 +260,7 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_11">
        <item>
-        <widget class="QCheckBox" name="UseDHCPHostname">
+        <widget class="QCheckBox" name="useDHCPHostname">
          <property name="text">
           <string>DHCP Hostname</string>
          </property>
