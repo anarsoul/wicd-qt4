@@ -16,28 +16,7 @@ from wicd import misc
 from wicd import wpath
 from wicd.translations import language
 
-def qstr(arg):
-    return QString.fromLocal8Bit(arg)
-
-def qlanguage(arg):
-    return qstr(language[arg])
-
-def catchdbus(func):
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except DBusException, e:
-            if e.get_dbus_name() != None and "DBus.Error.AccessDenied" in e.get_dbus_name():
-                error(None, language['access_denied'].replace("$A","<b>"+wpath.wicd_group+"</b>"))
-                raise DBusException(e)
-            else:
-                print "warning: ignoring exception %s" % e
-            return None
-    wrapper.__name__ = func.__name__
-    wrapper.__module__ = func.__module__
-    wrapper.__dict__ = func.__dict__
-    wrapper.__doc__ = func.__doc__
-    return wrapper
+from WicdQt4Utils import qstr, qlanguage, catchdbus
 
 class MainWindow(QWidget, Ui_mainWindow):
     def __init__(self, parent = None):
@@ -140,7 +119,6 @@ class MainWindow(QWidget, Ui_mainWindow):
             self.scrollArea.setWidget(label)
             label.show()
 
-
     @catchdbus
     def getWirelessSignal(self, id):
         if self.daemon.GetSignalDisplayType() == 1:
@@ -204,47 +182,17 @@ class MainWindow(QWidget, Ui_mainWindow):
 
     def openWirelessProps(self, id):
         dialog = NetworkProps(self)
-        self.setPropsValues(dialog, lambda(prop): self.getWirelessProp(id, prop))
+        dialog.loadSettings(lambda(prop): self.getWirelessProp(id, prop))
         dialog.exec_()     
-
-    def setPropsValues(self, dialog, getProp):
-        formatEntry = lambda(prop): misc.noneToBlankString(getProp(prop))
-        dialog.ipEdit.setText(formatEntry('ip'))
-        dialog.netmaskEdit.setText(formatEntry('netmask'))
-        dialog.gatewayEdit.setText(formatEntry('gateway'))
-        dialog.dns1Edit.setText(formatEntry('dns1'))
-        dialog.dns2Edit.setText(formatEntry('dns2'))
-        dialog.dns3Edit.setText(formatEntry('dns3'))
-        dialog.dnsDomainEdit.setText(formatEntry('dns_domain'))
-        dialog.searchDomainEdit.setText(formatEntry('search_domain'))
-        dialog.useGlobalDNS.setChecked(bool(getProp('use_global_dns')))
-
-        dhcpname = getProp('dhcphostname')
-        if dhcpname is None:
-            dhcpname = os.uname()[1]
-
-        dialog.dhcpHostnameEdit.setText(qstr(dhcpname))
-        self.updateCheckboxes(dialog, getProp)
-
-    def updateCheckboxes(self, dialog, getProp):
-        stringToNone = misc.stringToNone
-        if stringToNone(dialog.ipEdit.text()):
-            dialog.useStaticIP.setChecked(True)
-            dialog.useStaticDNS.setEnabled(True)
-        else:
-            dialog.useStaticIP.setChecked(False)
-            dialog.useStaticDNS.setEnabled(False)
-
-        if stringToNone(dialog.dns1Edit.text()) or dialog.useGlobalDNS.isChecked():
-            dialog.useStaticDNS.setChecked(True)
-        else:
-            dialog.useStaticDNS.setChecked(False)
-        dialog.updateCheckboxes()
-
+        dialog.saveSettings(lambda(prop, value): self.setWirelessProp(id, prop, value))
 
     @catchdbus
     def getWirelessProp(self, id, prop):
         return self.wireless.GetWirelessProperty(id, prop)
+
+    @catchdbus
+    def setWirelessProp(self, id, prop, value):
+        return self.wireless.SetWirelessProperty(id, prop, value)
 
     @catchdbus
     def updateAutoconnect(self, id, auto):
