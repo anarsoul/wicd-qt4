@@ -22,7 +22,7 @@ class NetworkProps(QDialog, Ui_networkProps):
         self.setupDBus()
 
     def loadSettings(self, getProp):
-        formatEntry = lambda(prop): misc.noneToBlankString(getProp(prop))
+        formatEntry = lambda prop: misc.noneToBlankString(getProp(prop))
         self.ipEdit.setText(formatEntry('ip'))
         self.netmaskEdit.setText(formatEntry('netmask'))
         self.gatewayEdit.setText(formatEntry('gateway'))
@@ -41,6 +41,41 @@ class NetworkProps(QDialog, Ui_networkProps):
         self.setCheckboxes(getProp)
 
     def saveSettings(self, setProp):
+        if self.useStaticIP.isChecked():
+            setProp('ip', misc.noneToString(self.ipEdit.text()))
+            setProp('netmask', misc.noneToString(self.netmaskEdit.text()))
+            setProp('gateway', misc.noneToString(self.gatewayEdit.text()))
+        else:
+            setProp('ip', '')
+            setProp('netmask', '')
+            setProp('gateway', '')
+
+        if self.useStaticDNS.isChecked() and not self.useGlobalDNS.isChecked():
+            setProp('use_static_dns', True)
+            setProp('use_global_dns', False)
+            setProp('dns_domain', misc.noneToString(self.dnsDomainEdit.text()))
+            setProp("search_domain", misc.noneToString(self.searchDomainEdit.text()))
+            setProp("dns1", misc.noneToString(self.dns1Edit.text()))
+            setProp("dns2", misc.noneToString(self.dns2Edit.text()))
+            setProp("dns3", misc.noneToString(self.dns3Edit.text()))
+        elif self.useStaticDNS.isChecked() and self.useGlobalDNS.isChecked():
+            setProp('use_static_dns', True)
+            setProp('use_global_dns', True)
+        else:
+            setProp('use_static_dns', False)
+            setProp('use_global_dns', False)
+            setProp('dns_domain', '')
+            setProp('search_domain', '')
+            setProp('dns1', '')
+            setProp('dns2', '')
+            setProp('dns3', '')
+            setProp('use_dhcphostname', self.useDHCPHostname.isChecked())
+            setProp('dhcphostname',misc.noneToString(self.dhcpHostnameEdit.text()))
+
+    def loadWirelessSettings(self, getProp):
+        pass
+
+    def saveWirelessSettings(self, setProp):
         pass
 
     def setCheckboxes(self, getProp):
