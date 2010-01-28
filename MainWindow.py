@@ -34,8 +34,11 @@ from wicd.translations import language
 from WicdQt4Utils import qstr, qlanguage, catchdbus
 
 class MainWindow(QWidget, Ui_mainWindow):
+    """ Main window class """
     def __init__(self, parent = None):
+    """ Constructor """
         super(MainWindow, self).__init__(parent)
+        # Setting up GUI, and connecting signals
         self.setupUi(self)
         self.scanning = False
         self.connecting = False
@@ -51,6 +54,7 @@ class MainWindow(QWidget, Ui_mainWindow):
 
         QApplication.instance().connect(QApplication.instance(), SIGNAL('aboutToQuit()'), self.onExit)
 
+        # Settings up dbus-related things
         self.curState = None
         self.daemon = self.wireless = self.wired = None
         self.setupDBus()
@@ -72,15 +76,19 @@ class MainWindow(QWidget, Ui_mainWindow):
         QTimer.singleShot(1000, lambda: self.updateStatus(True))
 
     def notImplemented(self):
+    """ Throws 'not implemented' message box """
         QMessageBox.information(self, 'Not Implemented!', 'Sorry, but this functions is not implemented yet!')
 
     def aboutClicked(self):
+    """ About button click handler, opens about dialog """
         QMessageBox.information(self, 'About', 'wicd-qt4 development version')
 
     def scanClicked(self):
+    """ Scan button click handler, initiates scan process """
         self.wireless.Scan(False)
 
     def scanStarted(self):
+    """ scanStarted signal handler, adjustes GUI to display that scan is in progress """
         label = QLabel(qlanguage('scanning_stand_by'))
         label.setAlignment(Qt.AlignCenter)
         label.setEnabled(False)
@@ -89,10 +97,12 @@ class MainWindow(QWidget, Ui_mainWindow):
         pass
     
     def scanEnded(self):
+    """ scanEnded signal handler, adjestes GUI to display scan results """
         self.updateNetworkList()
         self.updateStatus()
 
     def onExit(self):
+    """ onExit handler, shutdown dbus-related things """
         if self.DBUS_AVAIL:
             try:
                 self.daemon.SetGUIOpen(False)
@@ -101,12 +111,14 @@ class MainWindow(QWidget, Ui_mainWindow):
 
     @catchdbus
     def cancelClicked(self):
+    """ Cancel button click handler, cancels scan process """
         self.cancelBut.setEnabled(False)
         self.daemon.CancelConnect()
         self.daemon.SetForcedDisconnect(True)
 
     @catchdbus
     def updateNetworkList(self):
+    """ Updates network list """
         # Add wired list
         wiredList = self.wired.GetWiredProfileList()
 
@@ -136,12 +148,15 @@ class MainWindow(QWidget, Ui_mainWindow):
 
     @catchdbus
     def getWirelessSignal(self, id):
+    """ Returns signal level of wireless network with given id """
         if self.daemon.GetSignalDisplayType() == 1:
             return self.wireless.GetWirelessProperty(id, 'strength')
         else:
             return self.wireless.GetWirelessProperty(id, 'quality')
 
     def getWirelessNetWidget(self, id, is_active):
+    """ Creates widget that describes wireless network with given id. Set is_active
+        to True if PC is connected to wireless network with given id."""
         # outer widget
         widget = QWidget()
         hbox = QHBoxLayout()
@@ -196,6 +211,7 @@ class MainWindow(QWidget, Ui_mainWindow):
         return widget
 
     def openWirelessProps(self, id):
+    """ Opens properties dialog of wireless network with given ID """
         dialog = NetworkProps(self)
         dialog.loadSettings(lambda prop: self.getWirelessProp(id, prop))
         dialog.loadWirelessSettings(lambda prop: self.getWirelessProp(id, prop))
@@ -205,19 +221,23 @@ class MainWindow(QWidget, Ui_mainWindow):
 
     @catchdbus
     def getWirelessProp(self, id, prop):
+    """ Returns property 'prop' of wireless network with given id """
         return self.wireless.GetWirelessProperty(id, prop)
 
     @catchdbus
     def setWirelessProp(self, id, prop, value):
+    """ Set property 'prop' of wireless network with given id to given value"""
         return self.wireless.SetWirelessProperty(id, prop, value)
 
     @catchdbus
     def updateAutoconnect(self, id, auto):
+    """ Saves autoupdate property of wireless network with given ID """
         self.wireless.SetWirelessProperty(id, 'automatic', auto)
         self.wireless.SaveWirelessNetworkProperty(id, 'automatic')
 
     @catchdbus
     def getSignalImage(self, level):
+    """ Returns appropriate to 'level' QImage widget """
         if self.daemon.GetWPADriver() == 'ralink legacy' or \
            self.daemon.GetSignalDisplayType() == 1:
             if level >= -60:
@@ -243,10 +263,12 @@ class MainWindow(QWidget, Ui_mainWindow):
 
     @catchdbus
     def getWirelessNetStr(self, network_id):
+    """ Returns wireless essid """
         return self.wireless.GetWirelessProperty(network_id, 'essid')
 
     @catchdbus
     def updateStatus(self, state = None, info = None, timerFired = False):
+    """ Updates GUI status """
         self.connecting = False
         self.cancelBut.setVisible(False)
         self.connectProgress.setVisible(False)
@@ -274,15 +296,18 @@ class MainWindow(QWidget, Ui_mainWindow):
 
     @catchdbus
     def disconnect(self):
+    """ Disconnect button click handler, disconnects from current network """
         self.scrollArea.setEnabled(False)
         self.daemon.Disconnect()
     
     def setWiredState(self, info):
+    """ Updates current state with 'Connected to wired' value """
         self.scrollArea.setEnabled(True)
         self.statusLabel.setText('Connected to wired')
         print info
 
     def setWirelessState(self, info):
+    """ Updates current state with 'Connected to wireless' value """
         wirelessIP = info[0]
         network = info[1]
         strength = info[2]
@@ -293,6 +318,7 @@ class MainWindow(QWidget, Ui_mainWindow):
         self.scrollArea.setEnabled(True)
 
     def setConnectingState(self):
+    """ Updates current state with 'Connecting' value """
         if self.connecting:
             self.scrollArea.setEnabled(False)
             if self.wired.CheckIfWiredConnecting():
@@ -305,11 +331,13 @@ class MainWindow(QWidget, Ui_mainWindow):
             QTimer.singleShot(500, self.setConnectingState)
 
     def setNotConnectedState(self, info):
+    """ Updates current state with 'Not connected' value """
         self.scrollArea.setEnabled(True)
         self.statusLabel.setText('Not connected')
         print info
 
     def setupDBus(self, force=True):
+    """ Performs setup of DBus-related things """
         print "Connecting to daemon..."
         try:
             dbusmanager.connect_to_dbus()
@@ -333,6 +361,7 @@ class MainWindow(QWidget, Ui_mainWindow):
         self.DBUS_AVAIL = True
         print "Connected."
     def handleNoDBus():
+    """ Handles DBus daemon restarts """
         """ Called when dbus announces its shutting down. """
         self.DBUS_AVAIL = False
         #gui.handle_no_dbus(from_tray=True)
