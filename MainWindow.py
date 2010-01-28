@@ -360,7 +360,7 @@ class MainWindow(QWidget, Ui_mainWindow):
         self.wired = dbus_ifaces['wired']
         self.DBUS_AVAIL = True
         print "Connected."
-    def handleNoDBus():
+    def handleNoDBus(self):
     """ Handles DBus daemon restarts """
         """ Called when dbus announces its shutting down. """
         self.DBUS_AVAIL = False
