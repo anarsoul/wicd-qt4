@@ -25,7 +25,9 @@ from wicd import misc
 from WicdQt4Utils import qstr, qlanguage
 
 class NetworkProps(QDialog, Ui_networkProps):
+    """ Network properties dialog class """
     def __init__(self, parent = None):
+    """ Constructor """
         super(NetworkProps, self).__init__(parent)
         self.setupUi(self)
         self.useStaticIP.connect(self.useStaticIP, SIGNAL('toggled(bool)'), self.useStaticIPToggled)
@@ -36,6 +38,7 @@ class NetworkProps(QDialog, Ui_networkProps):
         self.setupDBus()
 
     def loadSettings(self, getProp):
+    """ Updates GUI elements with values from settings """
         formatEntry = lambda prop: misc.noneToBlankString(getProp(prop))
         self.ipEdit.setText(formatEntry('ip'))
         self.netmaskEdit.setText(formatEntry('netmask'))
@@ -55,6 +58,7 @@ class NetworkProps(QDialog, Ui_networkProps):
         self.setCheckboxes(getProp)
 
     def saveSettings(self, setProp):
+    """ Updates settings according to GUI elements """
         if self.useStaticIP.isChecked():
             setProp('ip', misc.noneToString(self.ipEdit.text()))
             setProp('netmask', misc.noneToString(self.netmaskEdit.text()))
@@ -87,12 +91,15 @@ class NetworkProps(QDialog, Ui_networkProps):
             setProp('dhcphostname',misc.noneToString(self.dhcpHostnameEdit.text()))
 
     def loadWirelessSettings(self, getProp):
+    """ Updates wireless-related GUI elements with values from settings """
         pass
 
     def saveWirelessSettings(self, setProp):
+    """ Updates wireless-related settings according to GUI elements """
         pass
 
     def setCheckboxes(self, getProp):
+    """ Set checkboxes according to settings """
         stringToNone = misc.stringToNone
         if stringToNone(self.ipEdit.text()):
             self.useStaticIP.setChecked(True)
@@ -108,18 +115,21 @@ class NetworkProps(QDialog, Ui_networkProps):
         self.updateCheckboxes()
 
     def setupDBus(self):
+    """ Setups DBus-related things """
         dbus_ifaces = dbusmanager.get_dbus_ifaces()
         self.daemon = dbus_ifaces['daemon']
         self.wireless = dbus_ifaces['wireless']
         self.wired = dbus_ifaces['wired']
 
     def updateCheckboxes(self):
+    """ Updates checkboxes according to settings """
         self.useStaticIPToggled(self.useStaticIP.isChecked())
         self.useStaticDNSToggled(self.useStaticDNS.isChecked())
         self.useGlobalDNSToggled(self.useGlobalDNS.isChecked())
         self.useDHCPHostnameToggled(self.useDHCPHostname.isChecked())
 
     def useStaticIPToggled(self, checked):
+    """ useStaticIP toggle signal handler """
         self.useStaticDNS.setEnabled(not checked)
         if checked:
             self.useStaticDNS.setChecked(True)
@@ -128,6 +138,7 @@ class NetworkProps(QDialog, Ui_networkProps):
         self.gatewayEdit.setEnabled(checked)
 
     def useStaticDNSToggled(self, checked):
+    """ useStaticDNS toggle signal handler """
         self.useGlobalDNS.setEnabled(checked)
         for edit in [self.dns1Edit, self.dns2Edit, self.dns3Edit,
             self.dnsDomainEdit, self.searchDomainEdit]:
@@ -137,9 +148,11 @@ class NetworkProps(QDialog, Ui_networkProps):
                 edit.setEnabled(not self.useGlobalDNS.isChecked())
 
     def useGlobalDNSToggled(self, checked):
+    """ useGlobalDNS toggle signal handler """
         if self.useStaticDNS.isChecked():
             for edit in [self.dns1Edit, self.dns2Edit, self.dns3Edit,
                 self.dnsDomainEdit, self.searchDomainEdit]:
                 edit.setEnabled(not checked)
     def useDHCPHostnameToggled(self, checked):
+    """ useDHCPHostname toggle signal handler """
         pass
